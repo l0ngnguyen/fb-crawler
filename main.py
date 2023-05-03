@@ -60,7 +60,7 @@ def search_and_crawl_page_urls(
     print(result_message)
 
 
-def crawl_page_information(urls, output_path, usr=None, pwd=None):
+def crawl_page_information(urls, output_path, delay=4, usr=None, pwd=None):
     driver = util.create_chrome_driver(headless=args.headless)
     if not login_facebook(driver, usr, pwd):
         driver.quit()
@@ -70,7 +70,7 @@ def crawl_page_information(urls, output_path, usr=None, pwd=None):
     with open(output_path, "a+") as f:
         writer = csv.writer(f)
         for i in tqdm(range(len(urls)), desc="processing...."):
-            writer.writerow(page_obj.get_information(urls[i], 2))
+            writer.writerow(page_obj.get_information(urls[i], delay=delay))
             if i % 10:
                 f.flush()
     print("Crawl successfully!")
@@ -83,7 +83,7 @@ def create_output_file(output_path):
         writer.writerow(settings.OUTPUT_HEADER)
 
 
-def crawl_page_information_multiprocess(n_threads, output_path, usr=None, pwd=None):
+def crawl_page_information_multiprocess(n_threads, output_path, delay=4, usr=None, pwd=None):
     create_output_file(output_path)
     process_list = []
     with ThreadPoolExecutor(max_workers=n_threads) as executor:
@@ -94,7 +94,7 @@ def crawl_page_information_multiprocess(n_threads, output_path, usr=None, pwd=No
         chunks = [urls[i : i + n] for i in range(0, len(urls), n)]
         for chunk in chunks:
             process_list.append(
-                executor.submit(crawl_page_information, chunk, output_path, usr, pwd)
+                executor.submit(crawl_page_information, chunk, output_path, delay, usr, pwd)
             )
     wait(process_list)
 
@@ -132,6 +132,7 @@ if __name__ == "__main__":
     location = input("Input search location: ")
 
     print(title2.format("Input config:"))
+    download_delay = int(input("Input download delay: "))
     n_threads = int(input("Input Number of threads: "))
     output_path = input("Input output file path: ")
 
@@ -141,4 +142,4 @@ if __name__ == "__main__":
 
     # Crawl information
     print(title2.format("Start Crawling page information from urls"))
-    crawl_page_information_multiprocess(n_threads, output_path, email, pwd)
+    crawl_page_information_multiprocess(n_threads, output_path, delay=download_delay, usr=email, pwd=pwd)
