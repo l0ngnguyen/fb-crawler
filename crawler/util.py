@@ -34,19 +34,21 @@ def is_phone_number(s):
 
 
 def parse_information(data):
-    if data[-1]:
-        split_info = data[-1].split("\n")
-        for s in split_info:
-            subscribe_index = s.find("người theo dõi")
-            if subscribe_index != -1:
-                data[2] = s[:subscribe_index] + "người theo dõi"
+    if not data[-1]:
+        data.append("")
+        return data
 
-            like_index = s.find("người thích")
-            if like_index != -1:
-                data[3] = s[:like_index] + "lượt thích"
+    for s in data[-1].split("\n"):
+        subscribe_index = s.find("người theo dõi")
+        if subscribe_index != -1:
+            data[2] = s[:subscribe_index] + "người theo dõi"
 
-            if is_phone_number(s):
-                data.append(s)
+        like_index = s.find("người thích")
+        if like_index != -1:
+            data[3] = s[:like_index] + "lượt thích"
+
+        if is_phone_number(s):
+            data.append(s)
 
     if len(data) < len(settings.OUTPUT_HEADER):
         data.append("")

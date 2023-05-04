@@ -4,7 +4,9 @@ import time
 import urllib.parse
 
 from selenium import webdriver
-from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import NoSuchElementException, TimeoutException
+from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.support import expected_conditions as EC
 
 from . import settings, util
 from .locator import LoginPageLocator, MainPageLocator, SearchPageLocator
@@ -13,9 +15,16 @@ from .locator import LoginPageLocator, MainPageLocator, SearchPageLocator
 class BasePage(object):
     def __init__(self, driver, logger=None):
         self.driver = driver
-        self.logger = (
-            logger if logger else util.get_logger(self.__class__.__name__, settings.LOG_FILENAME)
-        )
+        if logger:
+            self.logger = logger
+        else:
+            self.logger = util.get_logger(self.__class__.__name__, settings.LOG_FILENAME)
+
+    def get_title(self):
+        return self.driver.title
+
+    def get_url(self):
+        return self.driver.current_url
 
     def get(self, url):
         self.logger.info(f"Get url: {url}")
@@ -39,6 +48,11 @@ class BasePage(object):
         elements = self.driver.find_elements(*locator)
         self.logger.info(f"Found {len(elements)} elements with locator: {locator}")
         return elements
+
+    def hover(self, locator):
+        element = self.find_element(*locator)
+        hover = ActionChains(self.driver).move_to_element(element)
+        hover.perform()
 
 
 class LoginPage(BasePage):
@@ -124,7 +138,7 @@ class SearchResultsPage(BasePage):
             self.logger.info("Scroll")
             if util.is_exist_element(self.driver, self.locator.end_of_page):
                 self.logger.info("Scroll to the end of page")
-                print("Đã tới cuối trang")
+                print("Reached the bottom of the page")
                 break
             delay = delay * 1.5 if delay * 1.5 < limit_delay else limit_delay
 
