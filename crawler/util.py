@@ -1,4 +1,6 @@
 import json
+import logging
+import os
 import re
 import time
 
@@ -6,6 +8,22 @@ from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
 
 from . import settings
+
+
+def get_logger(logger_name, log_file, log_level=logging.INFO):
+    if not os.path.isdir(settings.LOG_DIR):
+        os.mkdir(settings.LOG_DIR)
+
+    logger = logging.getLogger(logger_name)
+    logger.setLevel(log_level)
+
+    format = logging.Formatter(settings.LOG_FORMAT)
+
+    file_handler = logging.FileHandler(os.path.join(settings.LOG_DIR, log_file))
+    file_handler.setFormatter(format)
+    logger.addHandler(file_handler)
+
+    return logger
 
 
 def is_phone_number(s):
@@ -128,10 +146,3 @@ def progress(message1, message2):
         return wrapper
 
     return decorator
-
-
-def multiprocess(max_workers, func, *args):
-    process_list = []
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        process_list.append(executor.submit(func, *args))
-    wait(process_list)

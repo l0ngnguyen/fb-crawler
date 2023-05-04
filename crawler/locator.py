@@ -23,7 +23,10 @@ class MainPageLocator:
         (By.CSS_SELECTOR, "div.x1jx94hy.x78zum5.xdt5ytf.xw3vkyv"),
     ]
     name = [
-        (By.CSS_SELECTOR, "div.x1e56ztr.x1xmf6yo > span > h1.x1heor9g.x1qlqyl8.x1pd3egz.x1a2a7pz"),
+        (
+            By.CSS_SELECTOR,
+            "div.x1e56ztr.x1xmf6yo > span > h1.x1heor9g.x1qlqyl8.x1pd3egz.x1a2a7pz",
+        ),
         (By.CSS_SELECTOR, "div.x1e56ztr.x1xmf6yo > h2 > span > span"),
     ]
     subscribe_count = (By.PARTIAL_LINK_TEXT, "người theo dõi")

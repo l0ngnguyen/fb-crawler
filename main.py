@@ -15,16 +15,27 @@ parser.set_defaults(headless=True)
 args = parser.parse_args()
 
 
-TITLE1 = "\n=============== {} ==============="
-TITLE2 = "\n--------------- {} ---------------"
-DONE_MESSAGE = "[DONE]"
+def get_title(s, char, len_title=50):
+    len_char = len_title - len(s) - 2
+    if len_char < 2:
+        return s
+    elif len_char % 2 == 0:
+        head = tail = char * (len_char // 2)
+    else:
+        head = char * (len_char // 2)
+        tail = head + char
+    return head + " " + s + " " + tail
 
 
-def login_facebook(driver, usr=None, pwd=None):
-    page_obj = page.LoginPage(driver)
+print_title1 = lambda s: print(get_title(s.upper(), char="#", len_title=60))
+print_title2 = lambda s: print(get_title(s, char="=", len_title=60))
+OK = "[DONE]"
+
+
+def login_facebook(driver, logobj=None, usr=None, pwd=None):
+    page_obj = page.LoginPage(driver, logobj)
     if os.path.exists(settings.COOKIES_PATH):
-        success = page_obj.login(use_cookie=True)
-        if success:
+        if page_obj.login(use_cookie=True):
             return True
 
     if usr is None and pwd is None:
@@ -43,29 +54,29 @@ def search_and_crawl_page_urls(
 ):
     page_obj = page.SearchResultsPage(driver)
 
-    print(TITLE2.format("Searching"))
+    print_title2("Searching")
     page_obj.search(query, location, search_type=search_type)
-    print(DONE_MESSAGE)
+    print(OK)
 
-    print(TITLE2.format("Auto scroll to the end of page"))
+    print_title2("Auto scroll to the end of page")
     page_obj.scroll(scroll_delay, limit_scroll_delay)
-    print(DONE_MESSAGE)
+    print(OK)
 
-    print(TITLE2.format(f"Extract urls from page"))
+    print_title2(f"Extract urls from page")
     urls = page_obj.get_urls(save_path=settings.URLS_PATH)
-    print(DONE_MESSAGE)
+    print(OK)
 
     print(f"Get {len(urls)} pages for query='{query}' and location='{location}'")
-    print(DONE_MESSAGE)
+    print(OK)
 
 
-def crawl_page_information(urls, output_path, delay=4, usr=None, pwd=None):
+def crawl_page_information(urls, output_path, logobj, delay=4, usr=None, pwd=None):
     driver = util.create_chrome_driver(headless=args.headless)
-    if not login_facebook(driver, usr, pwd):
+    if not login_facebook(driver, logobj, usr, pwd):
         driver.quit()
         return
 
-    page_obj = page.InformationPage(driver)
+    page_obj = page.InformationPage(driver, logobj)
     with open(output_path, "a+") as f:
         writer = csv.writer(f)
         for i in tqdm(range(len(urls)), desc="processing...."):
@@ -91,9 +102,10 @@ def crawl_page_information_multiprocess(n_threads, output_path, delay=4, usr=Non
 
         n = len(urls) // n_threads
         chunks = [urls[i : i + n] for i in range(0, len(urls), n)]
-        for chunk in chunks:
+        for i, chunk in enumerate(chunks):
+            logobj = util.get_logger(f"thread_{i+1}", settings.LOG_FILENAME)
             process_list.append(
-                executor.submit(crawl_page_information, chunk, output_path, delay, usr, pwd)
+                executor.submit(crawl_page_information, chunk, output_path, logobj, delay, usr, pwd)
             )
     wait(process_list)
 
@@ -102,35 +114,34 @@ if __name__ == "__main__":
     driver = util.create_chrome_driver(headless=args.headless)
 
     # login facebook
-    print(TITLE1.format("Facebook login"))
+    print_title1("Facebook login")
 
-    success = login_facebook(driver)
-    email = pwd = None
-    if success:
+    usr = pwd = None
+    if login_facebook(driver):
         print("Login success!")
-        print(DONE_MESSAGE)
+        print(OK)
     else:
         while True:
-            print(TITLE2.format("Nhập email đăng nhập và password"))
-            email = input("Input your email: ")
+            print_title2("Input facebook username and password")
+            usr = input("Input your username: ")
             pwd = input("Input your password: ")
-            success = login_facebook(driver, email, pwd)
-            if success:
+            print_title2("Start logging in facebook")
+            if login_facebook(driver, logobj=None, usr=usr, pwd=pwd):
                 print("Login success!")
-                print(DONE_MESSAGE)
+                print(OK)
                 break
-            request = input("Login fail :((, bấm q để thoát!: ")
+            request = input("Login fail :((, press q to escape!: ")
             if request == "q":
                 break
 
     # Crawl data
-    print(TITLE1.format("Crawling data"))
+    print_title1("Crawling data")
 
-    print(TITLE2.format("Input query"))
+    print_title2("Input query")
     query = input("Input search text: ")
     location = input("Input search location: ")
 
-    print(TITLE2.format("Input config:"))
+    print_title2("Input config")
     download_delay = float(input("Input download delay: "))
     n_threads = int(input("Input Number of threads: "))
     output_path = input("Input output file path: ")
@@ -140,8 +151,8 @@ if __name__ == "__main__":
     driver.quit()
 
     # Crawl information
-    print(TITLE2.format("Start Crawling page information from urls"))
+    print_title2("Start Crawling page info")
     crawl_page_information_multiprocess(
-        n_threads, output_path, delay=download_delay, usr=email, pwd=pwd
+        n_threads, output_path, delay=download_delay, usr=usr, pwd=pwd
     )
-    print(DONE_MESSAGE)
+    print(OK)
