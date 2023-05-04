@@ -1,4 +1,5 @@
-crawler/data/*
+crawler/data/*.json
+crawler/data/*.csv
 
 __pycache__
 *.ipynb

@@ -8,17 +8,16 @@ from tqdm import tqdm
 
 from crawler import page, settings, util
 
-
 parser = argparse.ArgumentParser(description="Simple facebook crawler tool")
-parser.add_argument('--headless', dest='headless', action='store_true')
-parser.add_argument('--no-headless', dest='headless', action='store_false')
+parser.add_argument("--headless", dest="headless", action="store_true")
+parser.add_argument("--no-headless", dest="headless", action="store_false")
 parser.set_defaults(headless=True)
 args = parser.parse_args()
 
 
-title1 = "=============== {} ==============="
-title2 = "--------------- {} ---------------"
-result_message = "[DONE]"
+TITLE1 = "\n=============== {} ==============="
+TITLE2 = "\n--------------- {} ---------------"
+DONE_MESSAGE = "[DONE]"
 
 
 def login_facebook(driver, usr=None, pwd=None):
@@ -44,20 +43,20 @@ def search_and_crawl_page_urls(
 ):
     page_obj = page.SearchResultsPage(driver)
 
-    print(title2.format("Searching"))
+    print(TITLE2.format("Searching"))
     page_obj.search(query, location, search_type=search_type)
-    print(result_message)
+    print(DONE_MESSAGE)
 
-    print(title2.format("Auto scroll to the end of page"))
+    print(TITLE2.format("Auto scroll to the end of page"))
     page_obj.scroll(scroll_delay, limit_scroll_delay)
-    print(result_message)
+    print(DONE_MESSAGE)
 
-    print(title2.format(f"Extract urls from page"))
+    print(TITLE2.format(f"Extract urls from page"))
     urls = page_obj.get_urls(save_path=settings.URLS_PATH)
-    print(result_message)
+    print(DONE_MESSAGE)
 
     print(f"Get {len(urls)} pages for query='{query}' and location='{location}'")
-    print(result_message)
+    print(DONE_MESSAGE)
 
 
 def crawl_page_information(urls, output_path, delay=4, usr=None, pwd=None):
@@ -73,7 +72,7 @@ def crawl_page_information(urls, output_path, delay=4, usr=None, pwd=None):
             writer.writerow(page_obj.get_information(urls[i], delay=delay))
             if i % 10:
                 f.flush()
-    print("Crawl successfully!")
+
     driver.quit()
 
 
@@ -102,37 +101,37 @@ def crawl_page_information_multiprocess(n_threads, output_path, delay=4, usr=Non
 if __name__ == "__main__":
     driver = util.create_chrome_driver(headless=args.headless)
 
-    print("This is a simple tool for crawl data from facebook")
-
     # login facebook
-    print(title1.format("Facebook login"))
+    print(TITLE1.format("Facebook login"))
 
     success = login_facebook(driver)
     email = pwd = None
     if success:
         print("Login success!")
+        print(DONE_MESSAGE)
     else:
         while True:
-            print(title2.format("Nhập email đăng nhập và password"))
+            print(TITLE2.format("Nhập email đăng nhập và password"))
             email = input("Input your email: ")
             pwd = input("Input your password: ")
             success = login_facebook(driver, email, pwd)
             if success:
                 print("Login success!")
+                print(DONE_MESSAGE)
                 break
             request = input("Login fail :((, bấm q để thoát!: ")
             if request == "q":
                 break
 
     # Crawl data
-    print(title1.format("Crawling data"))
+    print(TITLE1.format("Crawling data"))
 
-    print(title2.format("Input query"))
+    print(TITLE2.format("Input query"))
     query = input("Input search text: ")
     location = input("Input search location: ")
 
-    print(title2.format("Input config:"))
-    download_delay = int(input("Input download delay: "))
+    print(TITLE2.format("Input config:"))
+    download_delay = float(input("Input download delay: "))
     n_threads = int(input("Input Number of threads: "))
     output_path = input("Input output file path: ")
 
@@ -141,5 +140,8 @@ if __name__ == "__main__":
     driver.quit()
 
     # Crawl information
-    print(title2.format("Start Crawling page information from urls"))
-    crawl_page_information_multiprocess(n_threads, output_path, delay=download_delay, usr=email, pwd=pwd)
+    print(TITLE2.format("Start Crawling page information from urls"))
+    crawl_page_information_multiprocess(
+        n_threads, output_path, delay=download_delay, usr=email, pwd=pwd
+    )
+    print(DONE_MESSAGE)

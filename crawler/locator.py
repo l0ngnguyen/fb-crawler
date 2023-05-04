@@ -5,7 +5,7 @@ class LoginPageLocator:
     email_input = (By.ID, "email")
     pwd_input = (By.ID, "pass")
     login_button = (By.NAME, "login")
-    check_login = (By.ID, "ssrb_top_nav_start")
+    check_login = (By.CSS_SELECTOR, 'a[aria-label="Trang chủ"]')
 
 
 class SearchPageLocator:

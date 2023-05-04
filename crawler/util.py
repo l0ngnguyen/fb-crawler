@@ -19,10 +19,20 @@ def parse_information(data):
     if data[-1]:
         split_info = data[-1].split("\n")
         for s in split_info:
+            subscribe_index = s.find("người theo dõi")
+            if subscribe_index != -1:
+                data[2] = s[:subscribe_index] + "người theo dõi"
+
+            like_index = s.find("người thích")
+            if like_index != -1:
+                data[3] = s[:like_index] + "lượt thích"
+
             if is_phone_number(s):
                 data.append(s)
-                return data
-    data.append("")
+
+    if len(data) < len(settings.OUTPUT_HEADER):
+        data.append("")
+
     return data
 
 
@@ -89,6 +99,8 @@ def create_chrome_driver(executable_path=settings.EXECUTABLE_PATH, headless=Fals
     option = webdriver.ChromeOptions()
     if headless:
         option.add_argument("--headless")
+    option.add_argument("--window-size=1000,1080")
+    # option.add_argument("--start-maximized")
     option.add_argument("--disable-xss-auditor")
     option.add_argument("--disable-web-security")
     option.add_argument("--allow-running-insecure-content")
