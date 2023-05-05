@@ -2,6 +2,7 @@ import argparse
 import csv
 import json
 import os
+import time
 from concurrent.futures import ThreadPoolExecutor, wait
 
 from tqdm import tqdm
@@ -52,7 +53,7 @@ def search_and_crawl_page_urls(
     scroll_delay=1,
     limit_scroll_delay=5,
 ):
-    page_obj = page.SearchResultsPage(driver)
+    page_obj = page.SearchPage(driver)
 
     print_title2("Searching")
     page_obj.search(query, location, search_type=search_type)
@@ -68,6 +69,12 @@ def search_and_crawl_page_urls(
 
     print(f"Get {len(urls)} pages for query='{query}' and location='{location}'")
     print(OK)
+
+
+def create_output_file(output_path):
+    with open(output_path, "w") as f:
+        writer = csv.writer(f)
+        writer.writerow(settings.OUTPUT_HEADER)
 
 
 def crawl_page_information(urls, output_path, logobj, delay=4, usr=None, pwd=None):
@@ -87,12 +94,6 @@ def crawl_page_information(urls, output_path, logobj, delay=4, usr=None, pwd=Non
     driver.quit()
 
 
-def create_output_file(output_path):
-    with open(output_path, "w") as f:
-        writer = csv.writer(f)
-        writer.writerow(settings.OUTPUT_HEADER)
-
-
 def crawl_page_information_multiprocess(n_threads, output_path, delay=4, usr=None, pwd=None):
     create_output_file(output_path)
     process_list = []
@@ -107,6 +108,7 @@ def crawl_page_information_multiprocess(n_threads, output_path, delay=4, usr=Non
             process_list.append(
                 executor.submit(crawl_page_information, chunk, output_path, logobj, delay, usr, pwd)
             )
+            time.sleep(3)
     wait(process_list)
 
 

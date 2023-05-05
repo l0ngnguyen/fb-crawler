@@ -56,27 +56,6 @@ def parse_information(data):
     return data
 
 
-def scroll_down_page(driver, speed=100, delay=2):
-    current_scroll_position = driver.execute_script("return document.documentElement.scrollTop")
-    new_height = current_scroll_position + 1
-    while current_scroll_position <= new_height:
-        current_scroll_position += speed
-        driver.execute_script("window.scrollTo(0, {});".format(current_scroll_position))
-        time.sleep(delay)
-        new_height = driver.execute_script("return document.body.scrollHeight")
-
-
-def scroll_down_to_end_page(driver, delay=2):
-    last_height = driver.execute_script("return document.body.scrollHeight")
-    while True:
-        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-        time.sleep(delay)
-        new_height = driver.execute_script("return document.body.scrollHeight")
-        if new_height == last_height:
-            break
-        last_height = new_height
-
-
 def save_cookie(driver, path):
     with open(path, "w") as f:
         json.dump(driver.get_cookies(), f)
@@ -87,14 +66,6 @@ def load_cookie(driver, path):
         cookies = json.load(f)
     for cookie in cookies:
         driver.add_cookie(cookie)
-
-
-def is_exist_element(driver, locator):
-    try:
-        driver.find_element(*locator)
-        return True
-    except NoSuchElementException:
-        return False
 
 
 def urljoin(*args):

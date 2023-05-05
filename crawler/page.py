@@ -5,7 +5,6 @@ import urllib.parse
 
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
-from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.support import expected_conditions as EC
 
 from . import settings, util
@@ -20,11 +19,19 @@ class BasePage(object):
         else:
             self.logger = util.get_logger(self.__class__.__name__, settings.LOG_FILENAME)
 
+    def execute_script(self, js_script):
+        res = self.driver.execute_script(js_script)
+        self.logger.info(f"Execute script: '{js_script}', return value: {res}")
+        return res
+
     def get_title(self):
         return self.driver.title
 
     def get_url(self):
         return self.driver.current_url
+
+    def get_body_scroll_height(self):
+        return self.execute_script("return document.body.scrollHeight")
 
     def get(self, url):
         self.logger.info(f"Get url: {url}")
@@ -49,10 +56,35 @@ class BasePage(object):
         self.logger.info(f"Found {len(elements)} elements with locator: {locator}")
         return elements
 
-    def hover(self, locator):
-        element = self.find_element(*locator)
-        hover = ActionChains(self.driver).move_to_element(element)
-        hover.perform()
+    def is_exist_element(self, locator):
+        try:
+            self.find_element(locator)
+            return True
+        except NoSuchElementException:
+            return False
+
+    def scroll_down(self, distance):
+        current_scroll_position = self.execute_script("return document.documentElement.scrollTop")
+        driver.execute_script("window.scrollTo(0, {});".format(current_scroll_position + distance))
+        self.logger.info(
+            f"Scroll down from {current_scroll_position} to "
+            f'{self.execute_script("return document.documentElement.scrollTop")}'
+        )
+
+    def scroll_to(self, y):
+        self.execute_script(f"window.scrollTo(0, {y});")
+        self.logger.info(f"Scroll to {y}")
+
+    def scroll_down_to_end_page(self, delay=2):
+        self.logger.info(f"Start scrolling to the end of page: {self.get_url()}")
+        last_height = -1
+        while True:
+            self.scroll_to(self.get_body_scroll_height())
+            time.sleep(delay)
+            new_height = self.get_body_scroll_height()
+            if new_height == last_height:
+                break
+            last_height = new_height
 
 
 class LoginPage(BasePage):
@@ -87,7 +119,7 @@ class LoginPage(BasePage):
         return False
 
     def is_login_success(self):
-        if util.is_exist_element(self.driver, self.locator.check_login):
+        if self.is_exist_element(self.locator.check_login):
             return True
         return False
 
@@ -115,11 +147,13 @@ class InformationPage(BasePage):
             element = self.find_element(locator)
             data.append(element.text if element else "")
 
-        self.logger.info(f"Crawled data from {page_url}:\n{data}")
+        self.logger.info(
+            f"Crawled data from {page_url}:\n{json.dumps(data, indent=2, ensure_ascii=False)}"
+        )
         return util.parse_information(data)
 
 
-class SearchResultsPage(BasePage):
+class SearchPage(BasePage):
     locator = SearchPageLocator()
     search_api = "https://www.facebook.com/search/{search_type}?q={query}"
 
@@ -134,10 +168,9 @@ class SearchResultsPage(BasePage):
 
     def scroll(self, delay=1, limit_delay=5):
         while True:
-            util.scroll_down_to_end_page(self.driver, delay)
-            self.logger.info("Scroll")
-            if util.is_exist_element(self.driver, self.locator.end_of_page):
-                self.logger.info("Scroll to the end of page")
+            self.scroll_down_to_end_page(delay)
+            if self.is_exist_element(self.locator.end_of_page):
+                self.logger.info("Reached the bottom of the page")
                 print("Reached the bottom of the page")
                 break
             delay = delay * 1.5 if delay * 1.5 < limit_delay else limit_delay
@@ -150,6 +183,6 @@ class SearchResultsPage(BasePage):
         if save_path:
             with open(save_path, "w") as f:
                 json.dump(urls, f)
-            print("Save crawl urls successfully!")
+            self.logger.info(f"Save crawl urls to '{save_path}' successfully!")
 
         return urls
