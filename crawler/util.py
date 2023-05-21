@@ -91,15 +91,6 @@ def create_chrome_driver(executable_path=settings.EXECUTABLE_PATH, headless=Fals
     if headless:
         option.add_argument("--headless")
     option.add_argument("--window-size=1000,1080")
-    # option.add_argument("--start-maximized")
-    option.add_argument("--disable-xss-auditor")
-    option.add_argument("--disable-web-security")
-    option.add_argument("--allow-running-insecure-content")
-    option.add_argument("--no-sandbox")
-    option.add_argument("--disable-setuid-sandbox")
-    option.add_argument("--disable-webgl")
-    option.add_argument("--disable-gpu")
-    option.add_argument("--disable-popup-blocking")
     option.add_experimental_option(
         "prefs", {"profile.default_content_setting_values.notifications": 2}
     )
