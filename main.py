@@ -101,7 +101,7 @@ def crawl_page_information_multiprocess(
     with open(settings.URLS_PATH, "r", encoding="utf-8") as f:
         urls = json.load(f)
 
-    n = len(urls) // n_threads
+    n = len(urls) // n_threads + 1
     chunks = [urls[i: i + n] for i in range(0, len(urls), n)]
     process_list = []
     for i, chunk in enumerate(chunks):
@@ -119,7 +119,8 @@ def crawl_page_information_multiprocess(
 
 
 if __name__ == "__main__":
-    headless = bool(input("Show browser (input 0 or 1): "))
+    headless = input("Show browser (y/n): ")
+    headless = False if "y" in headless else True
     driver = util.create_chrome_driver(headless=headless)
 
     # login facebook
