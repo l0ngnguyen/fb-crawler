@@ -3,9 +3,7 @@ import os
 import time
 import urllib.parse
 
-from selenium import webdriver
-from selenium.common.exceptions import NoSuchElementException, TimeoutException
-from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import NoSuchElementException
 
 from . import settings, util
 from .locator import LoginPageLocator, MainPageLocator, SearchPageLocator
@@ -17,7 +15,10 @@ class BasePage(object):
         if logger:
             self.logger = logger
         else:
-            self.logger = util.get_logger(self.__class__.__name__, settings.LOG_FILENAME)
+            self.logger = util.get_logger(
+                self.__class__.__name__,
+                settings.LOG_FILENAME
+            )
 
     def execute_script(self, js_script):
         res = self.driver.execute_script(js_script)
@@ -41,12 +42,12 @@ class BasePage(object):
         if isinstance(locator, tuple):
             locator = [locator]
 
-        for l in locator:
+        for loc in locator:
             try:
-                element = self.driver.find_element(*l)
-                self.logger.info(f"Found element with locator: {l}")
+                element = self.driver.find_element(*loc)
+                self.logger.info(f"Found element with locator: {loc}")
                 return element
-            except NoSuchElementException as e:
+            except NoSuchElementException:
                 continue
         self.logger.info(f"Not found element with locator: {locator}")
         return None
@@ -64,8 +65,12 @@ class BasePage(object):
             return False
 
     def scroll_down(self, distance):
-        current_scroll_position = self.execute_script("return document.documentElement.scrollTop")
-        driver.execute_script("window.scrollTo(0, {});".format(current_scroll_position + distance))
+        current_scroll_position = self.execute_script(
+            "return document.documentElement.scrollTop"
+        )
+        self.driver.execute_script(
+            "window.scrollTo(0, {});".format(current_scroll_position + distance)
+        )
         self.logger.info(
             f"Scroll down from {current_scroll_position} to "
             f'{self.execute_script("return document.documentElement.scrollTop")}'
@@ -99,9 +104,13 @@ class LoginPage(BasePage):
         self.get(self.login_url)
         if use_cookie:
             if os.path.exists(self.cookies_path):
-                self.logger.info(f"Try to login by cookies")
-                util.load_cookie(self.driver, self.cookies_path)
-                self.driver.refresh()
+                try:
+                    self.logger.info("Try to login by cookies")
+                    util.load_cookie(self.driver, self.cookies_path)
+                    self.driver.refresh()
+                except Exception as e:
+                    self.logger.info(e)
+                    return False
             else:
                 return False
         else:
@@ -158,7 +167,9 @@ class SearchPage(BasePage):
     search_api = "https://www.facebook.com/search/{search_type}?q={query}"
 
     def search(self, query, location, search_type="pages"):
-        url = self.search_api.format(search_type=search_type, query=urllib.parse.quote_plus(query))
+        url = self.search_api.format(
+            search_type=search_type, query=urllib.parse.quote_plus(query)
+        )
         self.get(url)
         time.sleep(5)
         self.find_element(self.locator.location_button).click()

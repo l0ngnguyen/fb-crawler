@@ -1,19 +1,12 @@
-import argparse
 import csv
 import json
+import multiprocessing
 import os
 import time
-from concurrent.futures import ThreadPoolExecutor, wait
 
 from tqdm import tqdm
 
 from crawler import page, settings, util
-
-parser = argparse.ArgumentParser(description="Simple facebook crawler tool")
-parser.add_argument("--headless", dest="headless", action="store_true")
-parser.add_argument("--no-headless", dest="headless", action="store_false")
-parser.set_defaults(headless=True)
-args = parser.parse_args()
 
 
 def get_title(s, char, len_title=50):
@@ -28,9 +21,11 @@ def get_title(s, char, len_title=50):
     return head + " " + s + " " + tail
 
 
-print_title1 = lambda s: print(get_title(s.upper(), char="#", len_title=60))
-print_title2 = lambda s: print(get_title(s, char="=", len_title=60))
 OK = "[DONE]"
+def print_title1(s):
+    print(get_title(s.upper(), char="#", len_title=60))
+def print_title2(s):
+    print(get_title(s, char="=", len_title=60))
 
 
 def login_facebook(driver, logobj=None, usr=None, pwd=None):
@@ -63,7 +58,7 @@ def search_and_crawl_page_urls(
     page_obj.scroll(scroll_delay, limit_scroll_delay)
     print(OK)
 
-    print_title2(f"Extract urls from page")
+    print_title2("Extract urls from page")
     urls = page_obj.get_urls(save_path=settings.URLS_PATH)
     print(OK)
 
@@ -72,19 +67,19 @@ def search_and_crawl_page_urls(
 
 
 def create_output_file(output_path):
-    with open(output_path, "w") as f:
+    with open(output_path, "w", encoding="utf-8") as f:
         writer = csv.writer(f)
         writer.writerow(settings.OUTPUT_HEADER)
 
 
-def crawl_page_information(urls, output_path, logobj, delay=4, usr=None, pwd=None):
-    driver = util.create_chrome_driver(headless=args.headless)
+def crawl_page_information(urls, output_path, logobj, delay=4, usr=None, pwd=None, headless=False):
+    driver = util.create_chrome_driver(headless=headless)
     if not login_facebook(driver, logobj, usr, pwd):
         driver.quit()
         return
 
     page_obj = page.InformationPage(driver, logobj)
-    with open(output_path, "a+") as f:
+    with open(output_path, "a+", encoding="utf-8") as f:
         writer = csv.writer(f)
         for i in tqdm(range(len(urls)), desc="processing...."):
             writer.writerow(page_obj.get_information(urls[i], delay=delay))
@@ -94,26 +89,38 @@ def crawl_page_information(urls, output_path, logobj, delay=4, usr=None, pwd=Non
     driver.quit()
 
 
-def crawl_page_information_multiprocess(n_threads, output_path, delay=4, usr=None, pwd=None):
+def crawl_page_information_multiprocess(
+    n_threads,
+    output_path,
+    delay=4,
+    usr=None,
+    pwd=None,
+    headless=False
+):
     create_output_file(output_path)
-    process_list = []
-    with ThreadPoolExecutor(max_workers=n_threads) as executor:
-        with open(settings.URLS_PATH, "r") as f:
-            urls = json.load(f)
+    with open(settings.URLS_PATH, "r", encoding="utf-8") as f:
+        urls = json.load(f)
 
-        n = len(urls) // n_threads
-        chunks = [urls[i : i + n] for i in range(0, len(urls), n)]
-        for i, chunk in enumerate(chunks):
-            logobj = util.get_logger(f"thread_{i+1}", settings.LOG_FILENAME)
-            process_list.append(
-                executor.submit(crawl_page_information, chunk, output_path, logobj, delay, usr, pwd)
-            )
-            time.sleep(3)
-    wait(process_list)
+    n = len(urls) // n_threads
+    chunks = [urls[i: i + n] for i in range(0, len(urls), n)]
+    process_list = []
+    for i, chunk in enumerate(chunks):
+        logobj = util.get_logger(f"thread_{i+1}", settings.LOG_FILENAME)
+        process = multiprocessing.Process(
+            target=crawl_page_information,
+            args=(chunk, output_path, logobj, delay, usr, pwd, headless,),
+        )
+        process.start()
+        process_list.append(process)
+        time.sleep(2)
+
+    for p in process_list:
+        p.join()
 
 
 if __name__ == "__main__":
-    driver = util.create_chrome_driver(headless=args.headless)
+    headless = bool(input("Show browser (input 0 or 1): "))
+    driver = util.create_chrome_driver(headless=headless)
 
     # login facebook
     print_title1("Facebook login")
@@ -155,6 +162,11 @@ if __name__ == "__main__":
     # Crawl information
     print_title2("Start Crawling page info")
     crawl_page_information_multiprocess(
-        n_threads, output_path, delay=download_delay, usr=usr, pwd=pwd
+        n_threads,
+        output_path,
+        delay=download_delay,
+        usr=usr,
+        pwd=pwd,
+        headless=headless
     )
     print(OK)

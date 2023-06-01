@@ -1,3 +1,5 @@
+.venv
+
 crawler/data/*.json
 crawler/data/*.csv
 crawler/log
