@@ -28,8 +28,8 @@ def print_title2(s):
     print(get_title(s, char="=", len_title=60))
 
 
-def login_facebook(driver, logobj=None, usr=None, pwd=None):
-    page_obj = page.LoginPage(driver, logobj)
+def login_facebook(driver, usr=None, pwd=None):
+    page_obj = page.LoginPage(driver)
     if os.path.exists(settings.COOKIES_PATH):
         if page_obj.login(use_cookie=True):
             return True
@@ -72,13 +72,13 @@ def create_output_file(output_path):
         writer.writerow(settings.OUTPUT_HEADER)
 
 
-def crawl_page_information(urls, output_path, logobj, delay=4, usr=None, pwd=None, headless=False):
+def crawl_page_information(urls, output_path, delay=4, usr=None, pwd=None, headless=False):
     driver = util.create_chrome_driver(headless=headless)
-    if not login_facebook(driver, logobj, usr, pwd):
+    if not login_facebook(driver, usr, pwd):
         driver.quit()
         return
 
-    page_obj = page.InformationPage(driver, logobj)
+    page_obj = page.InformationPage(driver)
     with open(output_path, "a+", encoding="utf-8") as f:
         writer = csv.writer(f)
         for i in tqdm(range(len(urls)), desc="processing...."):
@@ -105,10 +105,9 @@ def crawl_page_information_multiprocess(
     chunks = [urls[i: i + n] for i in range(0, len(urls), n)]
     process_list = []
     for i, chunk in enumerate(chunks):
-        logobj = util.get_logger(f"thread_{i+1}", settings.LOG_FILENAME)
         process = multiprocessing.Process(
             target=crawl_page_information,
-            args=(chunk, output_path, logobj, delay, usr, pwd, headless,),
+            args=(chunk, output_path, delay, usr, pwd, headless,),
         )
         process.start()
         process_list.append(process)
@@ -136,7 +135,7 @@ if __name__ == "__main__":
             usr = input("Input your username: ")
             pwd = input("Input your password: ")
             print_title2("Start logging in facebook")
-            if login_facebook(driver, logobj=None, usr=usr, pwd=pwd):
+            if login_facebook(driver, usr=usr, pwd=pwd):
                 print("Login success!")
                 print(OK)
                 break
