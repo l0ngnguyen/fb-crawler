@@ -136,11 +136,13 @@ def crawl_page_information_multiprocess(
 
 
 if __name__ == "__main__":
+    multiprocessing.freeze_support()
+
     headless = input("Show browser (y/n): ")
     headless = False if "y" in headless else True
     driver = util.create_chrome_driver(headless=headless)
 
-    # login facebook
+    # LOGIN FACEBOOK
     print_title1("Facebook login")
 
     usr = pwd = None
@@ -161,23 +163,24 @@ if __name__ == "__main__":
             if request == "q":
                 break
 
-    # Crawl data
+    # CRAWL DATA
     print_title1("Crawling data")
 
+    # # Input crawl configs
     print_title2("Input query")
     query = input("Input search text: ")
     location = input("Input search location: ")
 
-    # Search and crawl urls
-    search_and_crawl_page_urls(driver, query, location)
-    driver.quit()
-
-    # Crawl information
     print_title2("Input config")
     download_delay = float(input("Input download delay: "))
     n_threads = int(input("Input Number of threads: "))
     output_path = input("Input output file path: ")
 
+    # # Search and crawl urls
+    search_and_crawl_page_urls(driver, query, location)
+    driver.quit()
+
+    # # Crawl information
     print_title2("Start Crawling page info")
     crawl_page_information_multiprocess(
         n_threads,

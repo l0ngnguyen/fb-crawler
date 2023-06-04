@@ -1,4 +1,5 @@
 .venv
+.vscode
 
 crawler/data/*.json
 crawler/data/*.csv
@@ -6,4 +7,3 @@ crawler/log
 
 __pycache__
 *.ipynb
-.vscode
