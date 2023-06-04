@@ -6,3 +6,4 @@ crawler/log
 
 __pycache__
 *.ipynb
+.vscode

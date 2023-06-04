@@ -16,9 +16,7 @@ def get_logger(logger_name, log_file, log_level=logging.INFO):
 
     format = logging.Formatter(settings.LOG_FORMAT)
 
-    file_handler = logging.FileHandler(
-        os.path.join(settings.LOG_DIR, log_file), encoding="utf-8"
-    )
+    file_handler = logging.FileHandler(os.path.join(settings.LOG_DIR, log_file), encoding="utf-8")
     file_handler.setFormatter(format)
     logger.addHandler(file_handler)
 
@@ -90,7 +88,7 @@ def create_chrome_driver(executable_path=settings.EXECUTABLE_PATH, headless=Fals
     if headless:
         option.add_argument("--headless")
     option.add_argument("--window-size=1000,1080")
-    option.add_experimental_option('excludeSwitches', ['enable-logging'])
+    option.add_experimental_option("excludeSwitches", ["enable-logging"])
     option.add_experimental_option(
         "prefs", {"profile.default_content_setting_values.notifications": 2}
     )

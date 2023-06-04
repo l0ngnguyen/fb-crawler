@@ -2,6 +2,7 @@ import csv
 import json
 import multiprocessing
 import os
+import random
 import time
 
 from tqdm import tqdm
@@ -22,8 +23,12 @@ def get_title(s, char, len_title=50):
 
 
 OK = "[DONE]"
+
+
 def print_title1(s):
     print(get_title(s.upper(), char="#", len_title=60))
+
+
 def print_title2(s):
     print(get_title(s, char="=", len_title=60))
 
@@ -72,7 +77,7 @@ def create_output_file(output_path):
         writer.writerow(settings.OUTPUT_HEADER)
 
 
-def crawl_page_information(urls, output_path, logobj, delay=4, usr=None, pwd=None, headless=False):
+def crawl_page_information(urls, output_path, logobj, delay=4, headless=False, usr=None, pwd=None):
     driver = util.create_chrome_driver(headless=headless)
     if not login_facebook(driver, logobj, usr, pwd):
         driver.quit()
@@ -81,11 +86,15 @@ def crawl_page_information(urls, output_path, logobj, delay=4, usr=None, pwd=Non
     page_obj = page.InformationPage(driver, logobj)
     with open(output_path, "a+", encoding="utf-8") as f:
         writer = csv.writer(f)
+        delay = 1 if delay < 1 else delay
         for i in tqdm(range(len(urls)), desc="processing...."):
-            writer.writerow(page_obj.get_information(urls[i], delay=delay))
+            writer.writerow(
+                page_obj.get_information(
+                    urls[i], delay=round(random.uniform(delay - 1, delay + 1), 1)
+                )
+            )
             if i % 10:
                 f.flush()
-
     driver.quit()
 
 
@@ -93,22 +102,30 @@ def crawl_page_information_multiprocess(
     n_threads,
     output_path,
     delay=4,
+    headless=False,
     usr=None,
     pwd=None,
-    headless=False
 ):
     create_output_file(output_path)
     with open(settings.URLS_PATH, "r", encoding="utf-8") as f:
         urls = json.load(f)
 
     n = len(urls) // n_threads + 1
-    chunks = [urls[i: i + n] for i in range(0, len(urls), n)]
+    chunks = [urls[i : i + n] for i in range(0, len(urls), n)]
     process_list = []
     for i, chunk in enumerate(chunks):
         logobj = util.get_logger(f"thread_{i+1}", settings.LOG_FILENAME)
         process = multiprocessing.Process(
             target=crawl_page_information,
-            args=(chunk, output_path, logobj, delay, usr, pwd, headless,),
+            args=(
+                chunk,
+                output_path,
+                logobj,
+                delay,
+                headless,
+                usr,
+                pwd,
+            ),
         )
         process.start()
         process_list.append(process)
@@ -151,23 +168,24 @@ if __name__ == "__main__":
     query = input("Input search text: ")
     location = input("Input search location: ")
 
-    print_title2("Input config")
-    download_delay = float(input("Input download delay: "))
-    n_threads = int(input("Input Number of threads: "))
-    output_path = input("Input output file path: ")
-
     # Search and crawl urls
     search_and_crawl_page_urls(driver, query, location)
     driver.quit()
 
     # Crawl information
+    print_title2("Input config")
+    download_delay = float(input("Input download delay: "))
+    n_threads = int(input("Input Number of threads: "))
+    output_path = input("Input output file path: ")
+
     print_title2("Start Crawling page info")
     crawl_page_information_multiprocess(
         n_threads,
         output_path,
         delay=download_delay,
-        usr=usr,
-        pwd=pwd,
-        headless=headless
+        headless=headless,
+        usr=None,
+        pwd=None,
     )
+
     print(OK)

@@ -15,10 +15,7 @@ class BasePage(object):
         if logger:
             self.logger = logger
         else:
-            self.logger = util.get_logger(
-                self.__class__.__name__,
-                settings.LOG_FILENAME
-            )
+            self.logger = util.get_logger(self.__class__.__name__, settings.LOG_FILENAME)
 
     def execute_script(self, js_script):
         res = self.driver.execute_script(js_script)
@@ -65,9 +62,7 @@ class BasePage(object):
             return False
 
     def scroll_down(self, distance):
-        current_scroll_position = self.execute_script(
-            "return document.documentElement.scrollTop"
-        )
+        current_scroll_position = self.execute_script("return document.documentElement.scrollTop")
         self.driver.execute_script(
             "window.scrollTo(0, {});".format(current_scroll_position + distance)
         )
@@ -167,9 +162,7 @@ class SearchPage(BasePage):
     search_api = "https://www.facebook.com/search/{search_type}?q={query}"
 
     def search(self, query, location, search_type="pages"):
-        url = self.search_api.format(
-            search_type=search_type, query=urllib.parse.quote_plus(query)
-        )
+        url = self.search_api.format(search_type=search_type, query=urllib.parse.quote_plus(query))
         self.get(url)
         time.sleep(5)
         self.find_element(self.locator.location_button).click()
